@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tradecoach | Weekly Report</title>
+<style>
+  :root { --bg:#f4f2ee; --card:#ffffff; --ink:#1b1b1b; --muted:#6b6b6b; --line:#dcd8d0; --accent:#1b1b1b; --err:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141414; --card:#1e1e1e; --ink:#f2f2f2; --muted:#a0a0a0; --line:#333; --accent:#f2f2f2; --err:#ff8a80; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--ink);
+         font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding:16px; }
+  .card { width:100%; max-width:380px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; }
+  .brand { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 6px; }
+  h1 { font-size:22px; margin:0 0 18px; }
+  label { display:block; font-size:14px; margin-bottom:6px; }
+  input[type=password] { width:100%; font-size:16px; padding:11px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--ink); }
+  .remember { display:flex; gap:8px; align-items:center; font-size:14px; color:var(--muted); margin:12px 0 18px; }
+  button { width:100%; font-size:16px; padding:12px; border:0; border-radius:8px; background:var(--accent); color:var(--bg); cursor:pointer; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .err { color:var(--err); font-size:14px; min-height:20px; margin:10px 0 0; }
+</style>
+</head>
+<body>
+<form class="card" id="f">
+  <p class="brand">Base Brands</p>
+  <h1>Tradecoach weekly report</h1>
+  <label for="pw">Password</label>
+  <input id="pw" type="password" autocomplete="current-password" autofocus required>
+  <label class="remember"><input id="rm" type="checkbox" checked> Remember me on this device</label>
+  <button id="go" type="submit">Open report</button>
+  <p class="err" id="err" role="alert"></p>
+</form>
+<script>
+const P = {"s":"YhfThcPsrL0+vsc4sxoWGg==","i":"irAgegfQaWQvIPlu","d":"l+xpymDarz7Sp1WoKH9ZIeF6o2rPXAZHn8aAayldxy18n5ZEreL6j9kr0C+foYuc9jcbDM2rJDRoHe4RD3uvqHhQxraz1/+70T8DjErkejI/e8LplZBfFV8oRaZPrktBVCILm8nhd1yDXm3Wb5lSmeHD9zYmeD5g8WUT+JSRuyRdf0Gw7aefudTalEBq9pbzDXm+xVLp4FKY8NZ2ZI+YaJopXP4P9PZMgUMG94qFXCuzmn4QYM6xGd7zkF/jpt/wT5ThR0Q9Dw8qMMr2nY2F6LM0vse+pgWNXfraNwkYSrRBUEhg1m70fqyqOaYPKuQvv1YMXzQoi3zLdO/ZsrEQvZMrWODuAMcu5V86mphoxa64xKrkpi/fy/HfeUDUuVHjGFUwE2c9zyB5SzJbZpYFWIHyJGKV0xUQKGk9KFPYR7tAxxj6B/2+V0SUcJZVYewBrLuBTPwliOUfNFQit6uJiE/gAYMQ+X85WW3nDU26I+lc57gZivbByHTlKXMQhc3JKmx/Gw4LA7aP+H98vCsZRCP/7VuLQSLcd9xLE17SRCRpyFqkd7pQUUb5BV0nqUX/8tmkHTP4IeyYg5fmW/vBou6tmE3it0/0af/j3dkbgTALms/s5KslldJbmuvHiX8cDL4HCDR7crBjCoeXjwyLCf9d8d2panXpaX7ZMsP7elmrxSTMCKW0IsUbE3VU43lt6BB9QJbhtd2TxDQWjxce8N4+io0ET1TWCm97WmYOHWBiMckOUnssmClHr3fYxqbQU5GnqV/cfJ7eynWqex5cPkBNxQxhsLmLig+bLY6xI5ABLPH+wjCUoxsISM2KkL4z6GIlZXt/hYIEGQdG2u5r8U0IAUBYijWFIebD8Q7cR745Rmx+xgp0f4txYJwUQ3BDk5YB2kvQfmvFKslK3EFhn42SMpcafa0fDXJ7Wg==","n":600000};
+const STORE = 'bb-report-key:' + location.pathname;
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function keyFromPassword(pw) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', hash:'SHA-256', salt:b64(P.s), iterations:P.n }, base, 256);
+  return new Uint8Array(bits);
+}
+async function open(raw) {
+  const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64(P.i) }, key, b64(P.d));
+  const html = new TextDecoder().decode(plain);
+  document.open(); document.write(html); document.close();
+}
+const toHex = a => Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+const fromHex = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
+
+(async () => {
+  let saved = null;
+  try { saved = localStorage.getItem(STORE); } catch (e) {}
+  if (saved) { try { await open(fromHex(saved)); return; } catch (e) { try { localStorage.removeItem(STORE); } catch (e2) {} } }
+})();
+
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('go'), err = document.getElementById('err');
+  btn.disabled = true; btn.textContent = 'Opening...'; err.textContent = '';
+  try {
+    const remember = document.getElementById('rm').checked;
+    const raw = await keyFromPassword(document.getElementById('pw').value);
+    await open(raw);
+    if (remember) { try { localStorage.setItem(STORE, toHex(raw)); } catch (e) {} }
+  } catch (x) {
+    err.textContent = 'That password did not work. Please try again.';
+    btn.disabled = false; btn.textContent = 'Open report';
+  }
+});
+</script>
+</body>
+</html>
