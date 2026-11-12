@@ -50,6 +50,7 @@ const data = Buffer.concat([cipher.update(plain), cipher.final(), cipher.getAuth
 
 const payload = JSON.stringify({ s: salt.toString('base64'), i: iv.toString('base64'), d: data.toString('base64'), n: ITERATIONS });
 const title = String(client.name).replace(/[<>&"]/g, '');
+const logo = 'data:image/png;base64,' + readFileSync(join(repoRoot, 'assets', 'bb-logo-navy.png')).toString('base64');
 
 const page = `<!doctype html>
 <html lang="en">
@@ -58,33 +59,61 @@ const page = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>${title} | Weekly Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f4f2ee; --card:#ffffff; --ink:#1b1b1b; --muted:#6b6b6b; --line:#dcd8d0; --accent:#1b1b1b; --err:#b42318; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141414; --card:#1e1e1e; --ink:#f2f2f2; --muted:#a0a0a0; --line:#333; --accent:#f2f2f2; --err:#ff8a80; } }
-  * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--ink);
-         font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding:16px; }
-  .card { width:100%; max-width:380px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; }
-  .brand { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 6px; }
-  h1 { font-size:22px; margin:0 0 18px; }
-  label { display:block; font-size:14px; margin-bottom:6px; }
-  input[type=password] { width:100%; font-size:16px; padding:11px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--ink); }
-  .remember { display:flex; gap:8px; align-items:center; font-size:14px; color:var(--muted); margin:12px 0 18px; }
-  button { width:100%; font-size:16px; padding:12px; border:0; border-radius:8px; background:var(--accent); color:var(--bg); cursor:pointer; }
-  button:disabled { opacity:.6; cursor:wait; }
-  .err { color:var(--err); font-size:14px; min-height:20px; margin:10px 0 0; }
+  @font-face { font-family:'Stolzl'; src:url('../assets/fonts/stolzl_medium.otf') format('opentype'); font-weight:500; font-display:swap; }
+  @font-face { font-family:'Stolzl'; src:url('../assets/fonts/stolzl_bold.otf') format('opentype'); font-weight:700; font-display:swap; }
+  @font-face { font-family:'IvyPresto'; src:url('../assets/fonts/ivy-presto-semibold.otf') format('opentype'); font-weight:600; font-display:swap; }
+  :root { --navy:#00143F; --cream:#EFEAE7; --cream-2:#F5F1EE; --teal:#578A8B; --gold:#DCAD67; --blush:#E5C3B9;
+          --navy-10:rgba(0,20,63,.10); --navy-12:rgba(0,20,63,.12); --navy-55:rgba(0,20,63,.55); --navy-80:rgba(0,20,63,.80);
+          --sans:'Stolzl','Archivo',-apple-system,system-ui,sans-serif; --serif:'IvyPresto','Fraunces',Georgia,serif; --body:'Kanit','Montserrat',sans-serif; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px;
+         background:var(--cream); color:var(--navy); font-family:var(--body); padding:32px 16px; -webkit-font-smoothing:antialiased; }
+  body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.035; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .logo { width:180px; height:auto; display:block; }
+  .card { position:relative; width:100%; max-width:440px; background:#fff; border:1px solid var(--navy-10); border-radius:28px;
+          padding:36px 32px 30px; box-shadow:0 30px 60px -40px rgba(0,20,63,.45); }
+  .eyebrow { display:inline-flex; align-items:center; gap:9px; font-family:var(--serif); font-style:italic; font-weight:600; font-size:15.5px;
+             text-transform:lowercase; color:var(--navy-80); border:1px solid var(--navy-10); background:var(--cream-2); padding:5px 16px 5px 10px; border-radius:30px; }
+  .eyebrow .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); }
+  h1 { font-family:var(--sans); font-weight:700; font-size:34px; line-height:1.05; letter-spacing:-.03em; margin:18px 0 10px; }
+  h1 .cad { display:block; font-family:var(--serif); font-style:italic; font-weight:600; letter-spacing:-.01em; text-transform:lowercase; color:var(--teal); font-size:1.08em; }
+  .lead { font-weight:300; font-size:16px; line-height:1.45; color:var(--navy-80); margin-bottom:24px; }
+  label[for=pw] { display:block; font-family:var(--sans); font-weight:500; font-size:14px; margin-bottom:8px; }
+  input[type=password] { width:100%; font-family:var(--body); font-size:17px; padding:14px 18px; border:1.5px solid var(--navy-12); border-radius:16px;
+                         background:var(--cream-2); color:var(--navy); outline:none; transition:border-color .15s, background .15s; }
+  input[type=password]:focus { border-color:var(--navy); background:#fff; }
+  .remember { display:flex; gap:10px; align-items:center; font-size:15px; color:var(--navy-80); margin:14px 0 22px; cursor:pointer; }
+  .remember input { width:18px; height:18px; accent-color:var(--navy); }
+  button { width:100%; display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:var(--sans); font-weight:500; font-size:16px;
+           padding:16px 30px; border:0; border-radius:40px; background:var(--navy); color:var(--cream); cursor:pointer;
+           box-shadow:0 10px 30px -14px rgba(0,20,63,.7); transition:transform .15s ease, box-shadow .2s; }
+  button:hover { transform:translateY(-2px); box-shadow:0 18px 40px -16px rgba(0,20,63,.8); }
+  button .arrow { color:var(--gold); transition:transform .2s ease; }
+  button:hover .arrow { transform:translateX(4px); }
+  button:disabled { opacity:.7; cursor:wait; transform:none; }
+  .err { color:#B42318; font-size:14px; min-height:20px; margin-top:12px; text-align:center; }
+  .foot { font-size:13px; color:var(--navy-55); text-align:center; }
+  @media (max-width:420px) { .card { padding:28px 22px 24px; } h1 { font-size:29px; } }
 </style>
 </head>
 <body>
+<img class="logo" src="${logo}" alt="Base Brands">
 <form class="card" id="f">
-  <p class="brand">Base Brands</p>
-  <h1>${title} weekly report</h1>
+  <span class="eyebrow"><span class="dot"></span>private report</span>
+  <h1>${title}<span class="cad">weekly report</span></h1>
+  <p class="lead">Enter your password to see this week's numbers. Same link every week.</p>
   <label for="pw">Password</label>
   <input id="pw" type="password" autocomplete="current-password" autofocus required>
   <label class="remember"><input id="rm" type="checkbox" checked> Remember me on this device</label>
-  <button id="go" type="submit">Open report</button>
+  <button id="go" type="submit"><span id="go-txt">Open report</span><span class="arrow" aria-hidden="true">&rarr;</span></button>
   <p class="err" id="err" role="alert"></p>
 </form>
+<p class="foot">Prepared for you by Base Brands</p>
 <script>
 const P = ${payload};
 const STORE = 'bb-report-key:' + location.pathname;
@@ -113,7 +142,7 @@ const fromHex = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
 document.getElementById('f').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('go'), err = document.getElementById('err');
-  btn.disabled = true; btn.textContent = 'Opening...'; err.textContent = '';
+  btn.disabled = true; document.getElementById('go-txt').textContent = 'Opening...'; err.textContent = '';
   try {
     const remember = document.getElementById('rm').checked;
     const raw = await keyFromPassword(document.getElementById('pw').value);
@@ -121,7 +150,7 @@ document.getElementById('f').addEventListener('submit', async e => {
     if (remember) { try { localStorage.setItem(STORE, toHex(raw)); } catch (e) {} }
   } catch (x) {
     err.textContent = 'That password did not work. Please try again.';
-    btn.disabled = false; btn.textContent = 'Open report';
+    btn.disabled = false; document.getElementById('go-txt').textContent = 'Open report';
   }
 });
 </script>
