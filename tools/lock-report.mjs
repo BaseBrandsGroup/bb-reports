@@ -34,7 +34,14 @@ if (!client) {
     'kestrel', 'lantern', 'meadow', 'nimbus', 'orchid', 'pebble', 'quarry', 'raven', 'summit', 'timber',
     'upland', 'velvet', 'willow', 'zephyr', 'copper', 'thistle', 'marble', 'saffron', 'beacon', 'canyon'];
   const pick = () => words[randomBytes(1)[0] % words.length];
-  client = { name: slug, password: `${pick()}-${pick()}-${100 + (randomBytes(2).readUInt16BE() % 900)}`, salt: randomBytes(16).toString('hex') };
+  // Every client gets their own password: never reuse a word pair or a whole password from another client.
+  const used = Object.values(clients).map(c => String(c.password || ''));
+  const pairs = new Set(used.map(p => p.split('-').slice(0, 2).sort().join('-')));
+  let password;
+  do {
+    password = `${pick()}-${pick()}-${100 + (randomBytes(2).readUInt16BE() % 900)}`;
+  } while (used.includes(password) || pairs.has(password.split('-').slice(0, 2).sort().join('-')) || password.split('-')[0] === password.split('-')[1]);
+  client = { name: slug, password, salt: randomBytes(16).toString('hex') };
   clients[slug] = client;
   mkdirSync(dirname(privateFile), { recursive: true });
   writeFileSync(privateFile, JSON.stringify(clients, null, 2) + '\n');
